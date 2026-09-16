@@ -69,7 +69,10 @@ int rin_crypto_sha256_update(RinCryptoSha256Context* context,
 int rin_crypto_sha256_final(RinCryptoSha256Context* context,
                             uint8_t digest[RIN_CRYPTO_SHA256_BYTES])
 {
-    if (!context || !digest) return RIN_CRYPTO_INVALID_ARGUMENT;
+    if (!context || !digest) {
+        if (digest != NULL) rin_secure_zero(digest, RIN_CRYPTO_SHA256_BYTES);
+        return RIN_CRYPTO_INVALID_ARGUMENT;
+    }
     sha256_final((sha256_ctx*)(void*)context->storage, digest);
     rin_secure_zero(context, sizeof(*context));
     return RIN_CRYPTO_OK;
@@ -80,6 +83,7 @@ int rin_crypto_sha256(const uint8_t* data, size_t data_size,
 {
     RinCryptoSha256Context context;
     int status;
+    if (digest != NULL) rin_secure_zero(digest, RIN_CRYPTO_SHA256_BYTES);
     if (!digest || !crypto_input_valid(data, data_size,
                                        RIN_CRYPTO_MAX_ONE_SHOT_BYTES))
         return digest ? RIN_CRYPTO_LIMIT : RIN_CRYPTO_INVALID_ARGUMENT;
@@ -111,7 +115,10 @@ int rin_crypto_sha512_update(RinCryptoSha512Context* context,
 int rin_crypto_sha512_final(RinCryptoSha512Context* context,
                             uint8_t digest[RIN_CRYPTO_SHA512_BYTES])
 {
-    if (!context || !digest) return RIN_CRYPTO_INVALID_ARGUMENT;
+    if (!context || !digest) {
+        if (digest != NULL) rin_secure_zero(digest, RIN_CRYPTO_SHA512_BYTES);
+        return RIN_CRYPTO_INVALID_ARGUMENT;
+    }
     sha512_final((sha512_ctx*)(void*)context->storage, digest);
     rin_secure_zero(context, sizeof(*context));
     return RIN_CRYPTO_OK;
@@ -122,6 +129,7 @@ int rin_crypto_sha512(const uint8_t* data, size_t data_size,
 {
     RinCryptoSha512Context context;
     int status;
+    if (digest != NULL) rin_secure_zero(digest, RIN_CRYPTO_SHA512_BYTES);
     if (!digest || !crypto_input_valid(data, data_size,
                                        RIN_CRYPTO_MAX_ONE_SHOT_BYTES))
         return digest ? RIN_CRYPTO_LIMIT : RIN_CRYPTO_INVALID_ARGUMENT;
@@ -144,6 +152,7 @@ int rin_crypto_hmac_sha256(const uint8_t* key, size_t key_size,
                            const uint8_t* data, size_t data_size,
                            uint8_t mac[RIN_CRYPTO_HMAC_SHA256_BYTES])
 {
+    if (mac != NULL) rin_secure_zero(mac, RIN_CRYPTO_HMAC_SHA256_BYTES);
     if (!mac || !crypto_key_data_valid(key, key_size, data, data_size))
         return mac ? RIN_CRYPTO_LIMIT : RIN_CRYPTO_INVALID_ARGUMENT;
     hmac_sha256((const u8*)key, (rin_size_t)key_size, (const u8*)data,
@@ -157,6 +166,8 @@ int rin_crypto_hkdf_sha256(const uint8_t* salt, size_t salt_size,
                            const uint8_t* info, size_t info_size,
                            uint8_t* output, size_t output_size)
 {
+    if (output != NULL && output_size <= RIN_CRYPTO_MAX_HKDF_BYTES)
+        rin_secure_zero(output, output_size);
     if (!crypto_input_valid(salt, salt_size, RIN_CRYPTO_MAX_ONE_SHOT_BYTES) ||
         !crypto_input_valid(input_key_material, input_key_material_size,
                             RIN_CRYPTO_MAX_ONE_SHOT_BYTES) ||
@@ -180,6 +191,8 @@ int rin_crypto_pbkdf2_sha256(const uint8_t* password, size_t password_size,
     size_t offset = 0u;
     uint8_t digest[RIN_CRYPTO_HMAC_SHA256_BYTES];
     uint8_t block[RIN_CRYPTO_HMAC_SHA256_BYTES];
+    if (output != NULL && output_size <= RIN_CRYPTO_MAX_PBKDF2_BYTES)
+        rin_secure_zero(output, output_size);
     if (!crypto_key_data_valid(password, password_size, salt, salt_size) ||
         iterations == 0u || iterations > RIN_CRYPTO_MAX_PBKDF2_ITERATIONS ||
         output_size > RIN_CRYPTO_MAX_PBKDF2_BYTES ||
@@ -223,6 +236,8 @@ int rin_crypto_pbkdf2_sha256(const uint8_t* password, size_t password_size,
 
 int rin_crypto_random(void* output, size_t output_size)
 {
+    if (output != NULL && output_size <= RIN_CRYPTO_MAX_RANDOM_BYTES)
+        rin_secure_zero(output, output_size);
     if (output_size > RIN_CRYPTO_MAX_RANDOM_BYTES ||
         (output_size != 0u && !output)) return RIN_CRYPTO_INVALID_ARGUMENT;
     if (output_size == 0u) return RIN_CRYPTO_OK;
@@ -238,6 +253,10 @@ int rin_crypto_hex_encode(const uint8_t* input, size_t input_size,
                           size_t output_capacity, size_t* output_size)
 {
     int status;
+    if (output_size != NULL) *output_size = 0u;
+    if (output != NULL && output_capacity <=
+        RIN_CRYPTO_MAX_ONE_SHOT_BYTES * 2u + 1u)
+        rin_secure_zero(output, output_capacity);
     if (!output_size || !crypto_input_valid(input, input_size,
                                             RIN_CRYPTO_MAX_ONE_SHOT_BYTES))
         return RIN_CRYPTO_INVALID_ARGUMENT;
