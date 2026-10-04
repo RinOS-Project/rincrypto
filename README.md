@@ -16,4 +16,4 @@ Bounded SHA-256/SHA-512, HMAC-SHA256, HKDF/PBKDF2, random-byte, and hex helpers.
 | ABI stability | Source ABI; context size is checked against the RinTLS backend, no separate binary ABI version. |
 | security | Random generation has no local PRNG fallback; this library does not retain keys or authorize their use. |
 | build | No standalone build file; compile crypto.c with its declared RinTLS, RinEncoding, and RinSecure dependencies. |
-| test | No standalone test target; parent consumer contracts are authoritative. No tests/builds run for this README update. |
+| test | RinOS's public sanitizer runner includes the `rincrypto` target. Generate `build/fuzz/corpus/rincrypto` with `python fuzz/prepare_untrusted_parser_corpus.py --output build/fuzz/corpus`, then run `python scripts/run_common_sanitizers.py --target rincrypto --smoke` under a host with ASan/UBSan runtime support. The target covers caller-owned primitive limits only; it does not provide keyring, credential, TLS identity, or service authority. |
